@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+{% load widget_tweaks %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height:75vh;">
+  <div class="w-100" style="max-width:420px">
+
+    <h2 class="mb-4 text-center fw-bold">Login</h2>
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="vstack gap-3">
+      {% csrf_token %}
+
+      <div>
+        <label class="form-label">Username</label>
+        <input name="username" class="form-control form-control-lg" required>
+      </div>
+
+      <div>
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control form-control-lg" required>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-100">Login</button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

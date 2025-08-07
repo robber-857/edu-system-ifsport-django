@@ -1,0 +1,50 @@
+{% extends "portal/base.html" %}
+{% load widget_tweaks %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height:75vh;">
+  <div class="w-100" style="max-width:460px">
+
+    <h2 class="mb-4 text-center fw-bold">Register</h2>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <form method="post" class="vstack gap-3">
+      {% csrf_token %}
+
+      <div>
+        <label class="form-label">Username</label>
+        {{ form.username|add_class:"form-control form-control-lg" }}
+        {{ form.username.errors }}
+      </div>
+
+      <div>
+        <label class="form-label">Email</label>
+        {{ form.email|add_class:"form-control form-control-lg" }}
+        {{ form.email.errors }}
+      </div>
+
+      <!-- ★ 新增：手机号（可选） -->
+      <div>
+        <label class="form-label">Phone (optional)</label>
+        {{ form.phone|add_class:"form-control form-control-lg" }}
+        {{ form.phone.errors }}
+      </div>
+
+      <div>
+        <label class="form-label">Password</label>
+        {{ form.password|add_class:"form-control form-control-lg" }}
+        {{ form.password.errors }}
+      </div>
+
+      <button class="btn btn-success btn-lg w-100">Create account</button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

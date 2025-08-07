@@ -1,0 +1,52 @@
+<style>
+  /* 容器：超宽时可横向滚动 */
+  .att-scroll { overflow-x: auto; border: 1px solid #eee; margin-top: 6px; }
+  /* 表格：强制按表格布局渲染 */
+  .att-table { border-collapse: collapse; table-layout: fixed; min-width: 980px; display: table; }
+  .att-table tr { display: table-row; }
+  .att-table th, .att-table td { display: table-cell; border: 1px solid #cfcfcf; padding: 6px 8px; text-align: center; }
+  .att-table th:first-child, .att-table td:first-child { text-align: left; min-width: 220px; }
+  .att-table th:nth-child(2), .att-table td:nth-child(2) { width: 60px; }
+
+  /* 可选：左两列吸附（滚动时固定在左侧） */
+  .sticky-left  { position: sticky; left: 0; background: #fff; z-index: 2; }
+  .sticky-left2 { position: sticky; left: 220px; background: #fff; z-index: 2; } /* 220 = 第一列最小宽度 */
+</style>
+
+<div class="att-scroll">
+  <table class="att-table">
+    <thead>
+      <tr>
+        <th class="sticky-left">学生(家长)</th>
+        <th class="sticky-left2">付费</th>
+        {% for h in header %}
+          <th>Week {{ h.week }}<br>({{ h.date }})</th>
+        {% endfor %}
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="sticky-left">
+          {{ row.student_name }}
+          <br><small>({{ row.parent_name }}){% if row.subgroup_name %} · {{ row.subgroup_name }}{% endif %}</small>
+        </td>
+        <td class="sticky-left2">{% if row.paid %}🟢{% else %}🔴{% endif %}</td>
+
+        {% for cell in row.cells %}
+        <td>
+          <input type="checkbox"
+                 class="att-toggle"
+                 data-enrollment-id="{{ row.enrollment_id }}"
+                 data-slot-id="{{ row.slot_id }}"
+                 data-subgroup-id="{{ row.subgroup_id }}"
+                 data-week-no="{{ cell.week }}"
+                 {% if cell.present %}checked{% endif %}>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

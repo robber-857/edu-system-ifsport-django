@@ -1,0 +1,94 @@
+{# templates/portal/parent.html #}
+{% extends "portal/base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Parent Dashboard{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+
+  <h2 class="mb-3 fw-bold">Parent Dashboard</h2>
+
+  <!-- quick nav -->
+  <nav class="mb-4 small">
+    <a href="{% url 'parent_enroll' %}"      class="me-3 link-underline-opacity-0">Enroll in a course</a>
+    <a href="{% url 'parent_enrollments' %}" class="me-3 link-underline-opacity-0">My Enrollments</a>
+    <a href="{% url 'parent_notices' %}"     class="me-3 link-underline-opacity-0">Class Notices</a>
+    <a href="{% url 'parent_resources' %}"   class="link-underline-opacity-0">Class Materials</a>
+  </nav>
+
+  <!-- system messages -->
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- comment form -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header fw-semibold">Leave a note for the class</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'parent_comment_submit' %}" class="row gy-3">
+        {% csrf_token %}
+
+        <div class="col-12 col-lg-6">
+          <label class="form-label fw-semibold">Select child & class</label>
+          <select name="subgroup_id"
+                  id="id_subgroup"
+                  class="form-select form-select-lg">
+            <option value="">— please choose —</option>
+            {% for en in enrolls %}
+              {% if en.sub_group %}
+                <option value="{{ en.sub_group.id }}">
+                  {{ en.student.full_name }} — {{ en.sub_group.name }}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12">
+          {{ form.content.label_tag }}
+          {{ form.content|add_class:"form-control form-control-lg"|attr:"rows:4"|attr:"placeholder:Write your feedback …" }}
+          {{ form.content.errors }}
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary btn-lg w-100 w-md-auto">Submit comment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- existing comments -->
+  {% if comments %}
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">My submitted comments</div>
+      <ul class="list-group list-group-flush">
+        {% for c in comments %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold">
+                {{ c.sub_group.name }}
+                {% if c.enrollment %}
+                  ({{ c.enrollment.student.full_name }})
+                {% endif %}
+              </span>
+              <small class="text-body-secondary">
+                {{ c.created_at|date:"Y-m-d H:i" }}
+              </small>
+            </div>
+            <p class="mb-0 mt-1">{{ c.content }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="text-body-secondary">No comments yet.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

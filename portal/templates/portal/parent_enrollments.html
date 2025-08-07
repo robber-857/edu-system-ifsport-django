@@ -1,0 +1,111 @@
+{# templates/portal/parent_enrollments.html #}
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}My Enrolments{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+
+  <h2 class="fw-bold mb-3">My Enrolments</h2>
+  <p>
+    <a href="{% url 'parent_enroll' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-lg"></i> New application
+    </a>
+  </p>
+
+  {# flash messages (optional) #}
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if items %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead class="table-light">
+          <tr class="text-nowrap">
+            <th scope="col">#</th>
+            <th scope="col">Child</th>
+            <th scope="col">Parent</th>
+            <th scope="col">Campus</th>
+            <th scope="col">Course</th>
+            <th scope="col">Semester</th>
+            <th scope="col">Slot</th>
+            <th scope="col">Sub-group</th>
+            <th scope="col">Status</th>
+            <th scope="col">Paid</th>
+            <th scope="col">Created</th>
+            <th scope="col" class="text-center">Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for x in items %}
+            <tr>
+              <td>{{ x.id }}</td>
+
+              <td>
+                {% if x.student %}{{ x.student.full_name }}{% else %}&mdash;{% endif %}
+              </td>
+
+              <td>{{ x.parent.username }}</td>
+
+              <td>{{ x.course.campus.name }}</td>
+              <td>{{ x.course.title }}</td>
+              <td>{{ x.semester.name }}</td>
+
+              <td class="text-nowrap">
+                {% if x.course_slot %}
+                  {{ x.course_slot.weekday|weekday_name }}
+                  {{ x.course_slot.start_time|time:"H:i" }}–{{ x.course_slot.end_time|time:"H:i" }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td>{% if x.sub_group %}{{ x.sub_group.name }}{% else %}—{% endif %}</td>
+
+              <td>
+                <span class="badge text-bg-{% if x.status == 'APPROVED' %}success{% elif x.status == 'PENDING' %}warning{% else %}secondary{% endif %}">
+                  {{ x.status }}
+                </span>
+              </td>
+
+              <td>
+                <span class="badge text-bg-{% if x.paid_status == 'PAID' %}success{% else %}secondary{% endif %}">
+                  {{ x.paid_status }}
+                </span>
+              </td>
+
+              <td class="text-nowrap">{{ x.created_at|date:"Y-m-d H:i" }}</td>
+
+              <td class="text-center">
+                {% if x.status == "PENDING" %}
+                  <form method="post" action="{% url 'cancel_enrollment' x.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Cancel this application?');">
+                      Cancel
+                    </button>
+                  </form>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-body-secondary">No enrolments yet.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

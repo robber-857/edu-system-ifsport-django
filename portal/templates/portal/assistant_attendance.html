@@ -1,0 +1,259 @@
+{# templates/portal/assistant_attendance.html #}
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}Assistant Attendance{% endblock %}
+
+{% block content %}
+<div class="container-xl my-4">
+
+  <h2 class="fw-bold mb-3">助教签到</h2>
+
+  {# ---------------- 系统 messages ---------------- #}
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {# ---------------- 顶部筛选栏 ---------------- #}
+  <div class="card mb-3 shadow-sm">
+    <div class="card-body py-3">
+      <form class="row gy-2 gx-3 align-items-center flex-wrap">
+        <div class="col-auto">
+          <label class="form-label me-1 mb-0">校区</label>
+          <select id="campus" class="form-select form-select-sm" onchange="onCampusOrSemesterOrWeekdayChanged()">
+            <option value="">— 请选择校区 —</option>
+            {% for c in campuses %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <label class="form-label me-1 mb-0">学期</label>
+          <select id="semester" class="form-select form-select-sm" onchange="onCampusOrSemesterOrWeekdayChanged()">
+            <option value="">— 请选择学期 —</option>
+            {% for s in semesters %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <label class="form-label me-1 mb-0">周几</label>
+          <select id="weekday" class="form-select form-select-sm" onchange="onCampusOrSemesterOrWeekdayChanged()">
+            <option value="">— 请选择周几 —</option>
+            {% for i, lab in weekdays %}
+              <option value="{{ i }}">{{ lab }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <label class="form-label me-1 mb-0">时段</label>
+          <select id="slot" class="form-select form-select-sm" onchange="onSlotChanged()">
+            <option value="">— 请选择时段 —</option>
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <label class="form-label me-1 mb-0">细分班级</label>
+          <select id="subgroup" class="form-select form-select-sm">
+            <option value="">(可选) 细分班级</option>
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <button id="btn-load" type="button" class="btn btn-primary btn-sm" onclick="loadTable()">
+            加载签到表
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ---------------- 表格容器（JS 填充） ---------------- #}
+  <div id="table-wrap"></div>
+
+  {# ---------------- 助教评论 ---------------- #}
+  <div id="assistant-comment-container" class="card mt-4 shadow-sm d-none">
+    <div class="card-header fw-semibold">助教评论</div>
+    <div class="card-body">
+      <form id="assistant-comment-form" method="post" action="#">
+        {% csrf_token %}
+        <input type="hidden" name="subgroup_id" id="comment_subgroup">
+        <textarea name="content" id="id_content" rows="4"
+                  class="form-control mb-3"
+                  placeholder="Write your feedback here…"></textarea>
+        <button class="btn btn-success">Submit Comment</button>
+      </form>
+    </div>
+  </div>
+
+  {# 历史评论 #}
+  <div id="assistant-existing-comments" class="mt-4"></div>
+
+</div>
+
+{# ================= JS ================= #}
+<script>
+/* ---- csrf & helpers ---- */
+function getCookie(name){
+  const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+  return m?m.pop():'';
+}
+const csrftoken=getCookie('csrftoken');
+async function fetchJSON(u){const r=await fetch(u,{credentials:'same-origin'});return r.json();}
+
+/* ---- DOM shortcuts ---- */
+const campus=document.getElementById('campus');
+const semester=document.getElementById('semester');
+const weekdaySel=document.getElementById('weekday');
+const slot=document.getElementById('slot');
+const subgroup=document.getElementById('subgroup');
+const tableWrap=document.getElementById('table-wrap');
+
+/* ---- 级联选择 ---- */
+async function onCampusOrSemesterOrWeekdayChanged(){
+  slot.innerHTML='<option value="">— 请选择时段 —</option>';
+  subgroup.innerHTML='<option value="">(可选) 细分班级</option>';
+
+  if(!campus.value||!semester.value||!weekdaySel.value) return;
+
+  const data=await fetchJSON(`{% url 'assistant_api_slots' %}?campus_id=${campus.value}&semester_id=${semester.value}&weekday=${weekdaySel.value}`);
+  data.slots.forEach(s=>{
+    slot.insertAdjacentHTML('beforeend',`<option value="${s.id}">${s.label}</option>`);
+  });
+}
+
+async function onSlotChanged(){
+  subgroup.innerHTML='<option value="">(可选) 细分班级</option>';
+  if(!slot.value) return;
+  const data=await fetchJSON(`{% url 'assistant_api_subgroups' %}?slot_id=${slot.value}`);
+  data.subgroups.forEach(g=>{
+    subgroup.insertAdjacentHTML('beforeend',`<option value="${g.id}">${g.label}</option>`);
+  });
+  await loadTable(); // 自动刷新
+}
+
+/* ---- 主表格 & 批量/评论 ---- */
+async function loadTable(){
+  if(!campus.value||!semester.value||!weekdaySel.value||!slot.value){
+    alert('请先选择 校区 / 学期 / 周几 / 时段');
+    return;
+  }
+  const url=`{% url 'assistant_attendance_table' %}?campus_id=${campus.value}&semester_id=${semester.value}&weekday=${weekdaySel.value}&slot_id=${slot.value}&subgroup_id=${subgroup.value}`;
+  const data=await fetchJSON(url);
+  tableWrap.innerHTML=`<div class="table-responsive">${data.html}</div>`;
+  addBulkPanel(slot.value, subgroup.value || '');
+
+  /* 勾选事件 */
+  document.querySelectorAll('.att-toggle').forEach(cb=>{
+    cb.addEventListener('change',e=>{
+      const el=e.target;
+      fetch("{% url 'assistant_attendance_mark' %}",{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+        body:JSON.stringify({
+          enrollment_id:el.dataset.enrollmentId,
+          course_slot_id:el.dataset.slotId,
+          sub_group_id:el.dataset.subgroupId||null,
+          week_no:el.dataset.weekNo,
+          present:el.checked
+        }),
+        credentials:'same-origin'
+      });
+    });
+  });
+
+  /* 评论可见性 + 历史评论 */
+  toggleCommentUI(subgroup.value);
+}
+
+/* -------- 批量面板 -------- */
+function addBulkPanel(slotId, subgroupId){
+  document.getElementById('bulk-panel')?.remove();
+
+  const panel=document.createElement('div');
+  panel.id='bulk-panel';
+  panel.className='card p-3 mb-3 shadow-sm';
+  panel.innerHTML=`
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <label class="form-label mb-0">Week#
+        <input id="bulk-week" type="number" class="form-control form-control-sm d-inline-block" style="width:70px">
+      </label>
+
+      <div class="btn-group btn-group-sm" role="group">
+        <button id="btn-all-present"  class="btn btn-outline-success">本周全员出勤</button>
+        <button id="btn-clear"        class="btn btn-outline-danger">清空本周</button>
+      </div>
+
+      <button id="btn-export" class="btn btn-sm btn-secondary ms-auto">导出 CSV</button>
+    </div>`;
+  tableWrap.prepend(panel);
+
+  document.getElementById('btn-all-present').onclick = () => bulkMark(true);
+  document.getElementById('btn-clear').onclick       = () => bulkMark(false);
+  document.getElementById('btn-export').onclick      = () =>{
+    window.open(`{% url 'attendance_export_csv' %}?slot_id=${slotId}&subgroup_id=${subgroupId}&strict=1&future_blank=1`,'_blank');
+  };
+
+  async function bulkMark(present){
+    const week = Number(document.getElementById('bulk-week').value);
+    if(!week){ alert('请输入 Week#'); return; }
+    await fetch(present ? "{% url 'attendance_mark_week_bulk' %}" : "{% url 'attendance_clear_week_bulk' %}", {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+      body:JSON.stringify({slot_id:slotId,subgroup_id:subgroupId||null,week_no:week}),
+      credentials:'same-origin'
+    });
+    loadTable();
+  }
+}
+
+/* -------- 助教评论 -------- */
+const commentWrap = document.getElementById('assistant-comment-container');
+const commentForm = document.getElementById('assistant-comment-form');
+const commentHidden = document.getElementById('comment_subgroup');
+async function toggleCommentUI(subgroupId){
+  if(subgroupId){
+    commentWrap.classList.remove('d-none');
+    commentHidden.value=subgroupId;
+    commentForm.action="{% url 'assistant_comment_submit' %}";
+    await loadAssistantComments(subgroupId);
+  }else{
+    commentWrap.classList.add('d-none');
+    await loadAssistantComments(null);
+  }
+}
+async function loadAssistantComments(subgroupId){
+  const box=document.getElementById('assistant-existing-comments');
+  if(!subgroupId){ box.className='d-none'; box.innerHTML=''; return; }
+  try{
+    const d=await fetchJSON(`{% url 'assistant_comments_api' %}?subgroup_id=${subgroupId}`);
+    box.className='';
+    box.innerHTML= d.comments.length
+      ? '<h4 class="mb-3">历史助教评论</h4>' +
+        d.comments.map(c=>`
+          <div class="card card-body shadow-sm mb-2">
+            <div class="fw-semibold mb-1">${c.author}
+              <small class="text-muted ms-2">${c.created_at}</small>
+            </div>
+            <div>${c.content}</div>
+          </div>`).join('')
+      : '<h4 class="mb-3">历史助教评论</h4><p class="text-muted">No previous comments.</p>';
+  }catch(e){
+    console.error(e);
+    box.className='';
+    box.innerHTML='<p class="text-danger">无法加载历史评论。</p>';
+  }
+}
+
+/* ---- subgroup 改变时刷新表/评论 ---- */
+subgroup.addEventListener('change',()=>loadTable());
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{# templates/portal/parent_notices.html #}
+{% extends "portal/base.html" %}
+
+{% block title %}Course notices{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+
+  <h2 class="fw-bold mb-3">Course Notices</h2>
+
+  {% if items %}
+    <div class="vstack gap-3">
+
+      {% for n in items %}
+        <div class="card shadow-sm">
+
+          <div class="card-body">
+
+            {# --- title line ------------------------------------------------ #}
+            <h5 class="card-title d-flex align-items-center gap-2 mb-1">
+              {% if n.is_pinned %}
+                <span class="badge rounded-pill text-bg-danger d-flex align-items-center gap-1">
+                  <i class="bi bi-pin-angle-fill"></i> Pinned
+                </span>
+              {% endif %}
+              {{ n.title }}
+            </h5>
+
+            {# --- course meta ---------------------------------------------- #}
+            <p class="small text-body-secondary mb-2">
+              {{ n.course_slot.course.title }} ·
+              {{ n.course_slot.semester.name }} ·
+              {{ n.course_slot.get_weekday_display }}
+              {{ n.course_slot.start_time|time:"H:i" }}–{{ n.course_slot.end_time|time:"H:i" }}
+              {% if n.sub_group %} · {{ n.sub_group.name }}{% endif %}
+            </p>
+
+            {# --- notice content ------------------------------------------- #}
+            <p class="card-text mb-2" style="white-space:pre-wrap;">{{ n.content }}</p>
+
+            <p class="small text-muted mb-0">
+              Published&nbsp;{{ n.created_at|date:"Y-m-d H:i" }}
+            </p>
+
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+  {% else %}
+    <p class="text-body-secondary">There are no notices at the moment.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

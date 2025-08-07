@@ -1,0 +1,170 @@
+{# templates/portal/parent_enroll.html #}
+{% extends "portal/base.html" %}
+{% load widget_tweaks %}
+{% block title %}Apply for a Class{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+
+  <h2 class="mb-3 fw-bold">Apply for a course</h2>
+
+  {# flash messages pushed from Django views #}
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" class="vstack gap-4">
+    {% csrf_token %}
+
+    <!-- ───────────── 1. Child section ───────────── -->
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Child</div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold">Pick an existing child</label>
+            <select id="student" name="student_id"
+                    class="form-select form-select-lg">
+              <option value="">— please choose —</option>
+              {% for s in students %}
+                <option value="{{ s.id }}">{{ s.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-auto text-center fw-semibold">
+            OR
+          </div>
+
+          <div class="col-12 col-md-5">
+            <label class="form-label fw-semibold">Add a new child</label>
+            <input type="text" name="new_student"
+                   placeholder="e.g. Tom Chen"
+                   class="form-control form-control-lg">
+          </div>
+
+          <small class="text-body-secondary mt-2">
+            If a name is entered, the child will be created automatically;
+            otherwise choose one from the list.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── 2. Schedule section ───────────── -->
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Course schedule</div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold">Campus</label>
+            <select id="campus" name="campus_id"
+                    class="form-select form-select-lg"
+                    onchange="onCampusSemesterWeekdayChange()">
+              <option value="">— choose —</option>
+              {% for c in campuses %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold">Semester</label>
+            <select id="semester" name="semester_id"
+                    class="form-select form-select-lg"
+                    onchange="onCampusSemesterWeekdayChange()">
+              <option value="">— choose —</option>
+              {% for s in semesters %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold">Weekday</label>
+            <select id="weekday" name="weekday"
+                    class="form-select form-select-lg"
+                    onchange="onCampusSemesterWeekdayChange()">
+              <option value="">— choose —</option>
+              {% for i, lab in weekdays %}
+                <option value="{{ i }}">{{ lab }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label fw-semibold">Time slot</label>
+            <select id="slot" name="slot_id"
+                    class="form-select form-select-lg"
+                    onchange="onSlotChange()">
+              <option value="">— choose slot —</option>
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label fw-semibold">Sub-group (optional)</label>
+            <select id="subgroup" name="subgroup_id"
+                    class="form-select form-select-lg">
+              <option value="">— choose sub-group —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── 3. Submit ───────────── -->
+    <div class="text-center">
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        Submit application
+      </button>
+    </div>
+
+    <p class="small text-body-secondary text-center">
+      After submission the status will be <strong>PENDING</strong>;
+      once approved by an administrator the enrollment becomes
+      <strong>APPROVED</strong> and appears in the attendance list.
+    </p>
+  </form>
+</div>
+
+<script>
+  // fetch helpers ---------------------------------------------------------
+  function getJSON(u){ return fetch(u,{credentials:"same-origin"}).then(r=>r.json()); }
+
+  async function onCampusSemesterWeekdayChange(){
+    const campusId = campus.value, semId = semester.value, weekday = weekdaySel.value;
+    slot.innerHTML     = '<option value="">— choose slot —</option>';
+    subgroup.innerHTML = '<option value="">— choose sub-group —</option>';
+    if(!campusId || !semId || !weekday) return;
+
+    const data = await getJSON("{% url 'assistant_api_slots' %}"
+                + `?campus_id=${campusId}&semester_id=${semId}&weekday=${weekday}`);
+    data.slots.forEach(s=> slot.add(new Option(s.label, s.id)));
+  }
+
+  async function onSlotChange(){
+    subgroup.innerHTML = '<option value="">— choose sub-group —</option>';
+    if(!slot.value) return;
+    const data = await getJSON("{% url 'assistant_api_subgroups' %}?slot_id=" + slot.value);
+    data.subgroups.forEach(g=> subgroup.add(new Option(g.label, g.id)));
+  }
+
+  // DOM shortcuts ---------------------------------------------------------
+  const campus     = document.getElementById('campus');
+  const semester   = document.getElementById('semester');
+  const weekdaySel = document.getElementById('weekday');
+  const slot       = document.getElementById('slot');
+  const subgroup   = document.getElementById('subgroup');
+</script>
+{% endblock %}

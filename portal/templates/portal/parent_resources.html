@@ -1,0 +1,84 @@
+{# templates/portal/parent_resources.html #}
+{% extends "portal/base.html" %}
+{% block title %}Learning resources{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h2 class="fw-bold mb-3">Learning Resources</h2>
+
+  {% if items %}
+    <div class="row g-4">
+
+      {% for r in items %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+
+            {# ---- 可选封面 ---- #}
+            {% if r.cover %}
+              <img src="{{ r.cover.url }}"
+                   class="card-img-top"
+                   style="object-fit:cover;height:180px"
+                   alt="{{ r.title }}">
+            {% endif %}
+
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">{{ r.title }}</h5>
+
+              <p class="small text-body-secondary mb-1">
+                {{ r.sub_group.name }} ·
+                {{ r.sub_group.course_slot.course.title }}
+              </p>
+
+              {% if r.description %}
+                <p class="card-text">{{ r.description }}</p>
+              {% endif %}
+
+              {# ---------- 多条子资源 ---------- #}
+{% for it in r.items.all %}
+  {% if it.type == "VIDEO" and it.video_url %}
+    <a href="{{ it.video_url }}"
+       class="btn btn-outline-primary btn-sm me-2 mb-2"
+       target="_blank">
+      <i class="bi bi-play-circle"></i> Watch video {{ forloop.counter }}
+    </a>
+
+  {% elif it.type == "FILE" and it.file %}
+    <a href="{{ it.file.url }}"
+       class="btn btn-outline-success btn-sm me-2 mb-2"
+       target="_blank">
+      <i class="bi bi-file-earmark-arrow-down"></i> Download file {{ forloop.counter }}
+    </a>
+
+  {% elif it.type == "IMAGE" and it.image %}
+    <a href="{{ it.image.url }}"
+       class="btn btn-outline-info btn-sm me-2 mb-2"
+       target="_blank">
+      <i class="bi bi-image"></i> View image {{ forloop.counter }}
+    </a>
+
+  {% elif it.type == "LINK" and it.ext_url %}
+    <a href="{{ it.ext_url }}"
+       class="btn btn-outline-secondary btn-sm me-2 mb-2"
+       target="_blank">
+      <i class="bi bi-link-45deg"></i> External link {{ forloop.counter }}
+    </a>
+  {% endif %}
+{% endfor %}
+{# ---------- 多条子资源 ---------- #}
+
+
+            </div>
+
+            <div class="card-footer small text-muted">
+              Published {{ r.created_at|date:"Y-m-d H:i" }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+  {% else %}
+    <p class="text-body-secondary">No resource available.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{# 在工具栏右侧添加一个导出按钮，保留当前筛选参数 #}
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a class="historylink"
+       href="{% url 'admin:portal_attendance_export' %}?{{ request.GET.urlencode }}"
+       title="导出当前筛选结果为 CSV">导出当前筛选</a>
+  </li>
+{% endblock %}
