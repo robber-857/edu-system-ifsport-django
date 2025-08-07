@@ -97,3 +97,15 @@ SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
+
+# S3 / R2 存储（示例：Cloudflare R2，兼容 S3）
+if env.bool("USE_S3", default=False):
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    AWS_S3_ENDPOINT_URL      = env("AWS_S3_ENDPOINT_URL")
+    AWS_ACCESS_KEY_ID        = env("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY    = env("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME  = env("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME       = env("AWS_S3_REGION_NAME", default="auto")
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+    AWS_DEFAULT_ACL          = "public-read"
+    MEDIA_URL                = f"https://{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_ENDPOINT_URL.split('//')[1]}/"

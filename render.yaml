@@ -1,0 +1,21 @@
+services:
+- type: web
+  name: edu-ifsport
+  runtime: python
+  plan: standard            # ← 由 free 改成 standard（不休眠）
+  memoryLimit: 1024         # 1 GB
+  disk:
+    name: media-disk
+    mountPath: /opt/data    # 仅少量缓存/日志需要时可保留 1-2 GB
+    sizeGB: 2
+  buildCommand: |
+    pip install -r requirements.txt
+    python manage.py collectstatic --noinput
+    python manage.py migrate --noinput
+  startCommand: gunicorn core.wsgi:application --log-file -
+  envVars:
+  - key: DJANGO_SETTINGS_MODULE
+    value: core.settings
+  - key: PYTHONUNBUFFERED
+    value: "1"
+  - fromGroup: django-edu-env
