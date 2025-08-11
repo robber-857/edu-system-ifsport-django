@@ -1,11 +1,14 @@
 from pathlib import Path
 import environ
 import pymysql
+import os
 pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# 哪个 env 文件？默认还是 .env
+ENV_FILE = os.environ.get("ENV_FILE", ".env")
+environ.Env.read_env(BASE_DIR / ENV_FILE)
 env = environ.Env(DEBUG=(bool, True))
-environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY", default="change-me")
 DEBUG = env.bool("DEBUG", default=True)
@@ -109,3 +112,18 @@ if env.bool("USE_S3", default=False):
     AWS_S3_SIGNATURE_VERSION = "s3v4"
     AWS_DEFAULT_ACL          = "public-read"
     MEDIA_URL                = f"https://{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_ENDPOINT_URL.split('//')[1]}/"
+
+# ==== Local email backend for DEBUG ====
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "Edu Portal <noreply@local.test>"
+else:
+    EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Edu Portal <noreply@gmail.com>")
+
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)

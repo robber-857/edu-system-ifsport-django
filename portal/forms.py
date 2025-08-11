@@ -15,6 +15,10 @@ class RegisterForm(forms.Form):
             "max_length": "Username may be at most 25 characters.",
         },
     )
+    accept_terms = forms.BooleanField(
+        required=True,
+        label="I have read and accept the Terms & Policies"
+    )
     #  新增：可选手机号
     phone = forms.CharField(
         required=False,
@@ -47,7 +51,9 @@ class RegisterForm(forms.Form):
             username=data["username"],
             email=data["email"],
             password=data["password"],
+            is_active=True,
         )
+        
         # 如果填写了手机号就保存（你的 User 模型里有 phone 字段）
         phone = data.get("phone") or ""
         if phone:

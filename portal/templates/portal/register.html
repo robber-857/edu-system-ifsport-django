@@ -1,23 +1,21 @@
 {% extends "portal/base.html" %}
 {% load widget_tweaks %}
 {% block title %}Register{% endblock %}
-
 {% block content %}
 <div class="container d-flex align-items-center justify-content-center" style="min-height:75vh;">
   <div class="w-100" style="max-width:460px">
 
     <h2 class="mb-4 text-center fw-bold">Register</h2>
-
     {% if form.non_field_errors %}
       <div class="alert alert-danger">
         {{ form.non_field_errors }}
       </div>
     {% endif %}
-
     <form method="post" class="vstack gap-3">
       {% csrf_token %}
 
-      <div>
+      <!-- username / email / phone / password fields -->
+       <div>
         <label class="form-label">Username</label>
         {{ form.username|add_class:"form-control form-control-lg" }}
         {{ form.username.errors }}
@@ -42,9 +40,51 @@
         {{ form.password.errors }}
       </div>
 
-      <button class="btn btn-success btn-lg w-100">Create account</button>
-    </form>
+      <!-- accept terms (opens modal) -->
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="1"
+               id="id_accept_terms" name="accept_terms" required>
+        <label class="form-check-label" for="id_accept_terms">
+          I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">
+          Terms &amp; Policies</a>
+        </label>
+        {{ form.accept_terms.errors }}
+      </div>
 
+      <button class="btn btn-success btn-lg w-100 mt-2">Create account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- Bootstrap modal ---------- -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="termsModalLabel">Infinity Sport – Terms & Policies</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Please read the following documents carefully.  
+          (They will open in a new tab.)
+        </p>
+        <ul>
+          {% load static %}
+          <li><a href="{% static 'portal/docs/Parents_and_Participant_Handbook.pdf' %}"
+                 target="_blank">Parents &amp; Participant Handbook (PDF)</a></li>
+          <li><a href="{% static 'portal/docs/Infinity_Sport_Terms_and_Conditions.pdf' %}"
+                 target="_blank">Infinity Sport Terms &amp; Conditions (PDF)</a></li>
+        </ul>
+        <hr>
+        <p class="small text-muted">
+          By ticking “I agree” in the registration form you confirm you have read and accept these policies.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

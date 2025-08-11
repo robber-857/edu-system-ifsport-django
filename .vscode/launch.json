@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django (local)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["runserver", "8000"],
+      "django": true,
+
+      // 告诉 VS Code 读哪一个 env
+      "env": { "ENV_FILE": ".env.local" }
+    }
+  ]
+}

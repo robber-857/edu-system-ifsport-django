@@ -8,6 +8,7 @@ from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.db.models import Q
+from django.conf import settings
 import csv
 from django.http import HttpResponse
 from io import StringIO
@@ -28,6 +29,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404, redirect
 from .forms import CommentForm
 from django.contrib import messages 
+from django.views.decorators.http import require_http_methods
 
 User = get_user_model()
 
@@ -57,13 +59,17 @@ def register_view(request):
                 phone    = form.cleaned_data.get("phone") or "",
                 role="PARENT",
                 is_active=True,
+                approval_status=User.Approval.PENDING,
             )
-            login(request, user)
-            return redirect(reverse("parent"))
+            messages.info(request,"Registration submitted. Please wait for admin approval.")
+            return redirect("login")                  # go back to login page
     else:
         form = RegisterForm()
 
     return render(request, "portal/register.html", {"form": form})
+
+
+User = get_user_model()
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -71,23 +77,43 @@ def login_view(request):
         username = request.POST.get("username")
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
-        if user:
-            login(request, user)
-            next_url = request.GET.get("next")
-            if not next_url:
-                if user.is_superuser:
-                    return redirect("/admin/")  # 超级用户自动进后台
-                elif user.role == "ASSISTANT":
-                    next_url = reverse("assistant_attendance")
-                else:
-                    next_url = reverse("parent")  # 默认家长
+        if not user:
+            return render(request, "portal/login.html",
+                          {"error": "Invalid credentials"})
+        # 超级管理员 → admin 后台
+        if user.is_superuser:
+            return redirect("/admin/")
+        # ------------ 审批状态检查 ------------
+        if user.approval_status == User.Approval.PENDING:
+            messages.warning(request, "Waiting for approve.")
+            return render(request, "portal/login.html")
+        elif user.approval_status == User.Approval.REJECTED:
+            messages.error(request, "Register rejected.")
+            return render(request, "portal/login.html")
+
+        # ------------ 已通过，正常登录 ------------
+        login(request, user)
+
+        # 1) URL 里带 ?next=/something/ 优先
+        next_url = request.GET.get("next")
+        if next_url:
             return redirect(next_url)
-        return render(request, "portal/login.html", {"error": "Invalid credentials"})
+        
+        # 2) 助教 → 助教考勤页
+        if user.role == User.Role.ASSISTANT:
+            return redirect(reverse("assistant_attendance"))
+
+        # 3) 其他（家长等）→ 默认登录跳转
+        return redirect(settings.LOGIN_REDIRECT_URL)
+
+    # GET 请求直接渲染登录页
     return render(request, "portal/login.html")
+
 
 def logout_view(request):
     logout(request)
     return redirect(reverse("home"))
+
 
 #防止不是is staff登录后台
 @staff_member_required

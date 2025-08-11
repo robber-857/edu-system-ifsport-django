@@ -5,11 +5,19 @@
 {% block content %}
 <div class="container d-flex align-items-center justify-content-center" style="min-height:75vh;">
   <div class="w-100" style="max-width:420px">
-
+   
     <h2 class="mb-4 text-center fw-bold">Login</h2>
-
+    
     {% if error %}
       <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
     {% endif %}
 
     <form method="post" class="vstack gap-3">
@@ -24,7 +32,10 @@
         <label class="form-label">Password</label>
         <input type="password" name="password" class="form-control form-control-lg" required>
       </div>
-
+      
+      <div class="d-flex justify-content-end mb-2">
+        <a href="{% url 'password_reset' %}" class="link-primary">Forgot password?</a>
+      </div>
       <button class="btn btn-primary btn-lg w-100">Login</button>
     </form>
 

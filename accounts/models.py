@@ -12,7 +12,17 @@ class User(AbstractUser):
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.PARENT)
     is_premium = models.BooleanField(default=False)
     phone = models.CharField("Phone", max_length=30, blank=True)  # 新增：可选
-    
+
     def __str__(self):
         return f"{self.username} ({self.role})"
+    class Approval(models.TextChoices):
+        PENDING  = "PENDING",  "Waiting for approve"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Register rejected"
+
+    approval_status = models.CharField(
+        max_length=8,
+        choices=Approval.choices,
+        default=Approval.PENDING,
+        )
 
