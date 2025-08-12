@@ -1,0 +1,46 @@
+services:
+  web:
+    build: .
+    container_name: app-web
+    env_file: .env
+    command: ["/entrypoint.sh"]
+    expose: ["8000"]
+    volumes:
+      - ./:/app
+      - ./public:/public
+    depends_on: [db]
+    networks: [appnet]
+
+  caddy:
+    image: caddy:2
+    container_name: app-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./public:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+    networks: [appnet]
+
+  db:
+    image: mysql:8.0
+    container_name: app-db
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-edu}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme}
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [appnet]
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+
+networks:
+  appnet:
+    driver: bridge

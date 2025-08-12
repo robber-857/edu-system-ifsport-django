@@ -1,0 +1,55 @@
+services:
+  web:
+    build: .
+    container_name: app-web
+    env_file: .env
+    command: ["/entrypoint.sh"]     # 与你现有一致
+    expose:
+      - "8000"                      # 供反代使用
+    ports:
+      - "8000:8000"                 # 可选：本机调试
+    volumes:
+      - ./:/app
+      - ./public:/public            # 收集静态/媒体的目标卷（settings 里写到了 /public/...）
+    depends_on:
+      - db
+    networks:
+      - appnet
+
+  caddy:
+    image: caddy:2
+    container_name: app-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./public:/srv               # 让 Caddy 直接服务 /static /media
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks:
+      - appnet
+
+  # ====== 占位示例：如果你已有自己的 db 配置，请改回你自己的 ======
+  db:
+    image: mysql:8
+    container_name: app-db
+    environment:
+      MYSQL_DATABASE: edu
+      MYSQL_ROOT_PASSWORD: change-me
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - appnet
+  # ============================================================
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+
+networks:
+  appnet:
+    driver: bridge
