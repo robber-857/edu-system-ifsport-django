@@ -32,6 +32,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+      - ./public:/public:ro         # 关键：挂整个 public
       - ./public/static:/static:ro
       - ./public/media:/media:ro
 

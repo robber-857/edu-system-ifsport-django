@@ -408,9 +408,44 @@ class AttendanceAdmin(admin.ModelAdmin):
                 marked_by, created
             ])
         return resp
+# --- 修复：公告表单按 course_slot 过滤 sub_group，并做一致性校验 ---
+from django import forms
+
+class ClassNoticeAdminForm(forms.ModelForm):
+    class Meta:
+        model = ClassNotice
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 默认置空，避免跨时段误选
+        self.fields["sub_group"].queryset = SubGroup.objects.none()
+
+        # POST 提交：根据提交的 course_slot 过滤
+        if self.is_bound:
+            slot_id = self.data.get("course_slot") or self.data.get("course_slot_id")
+            if slot_id:
+                self.fields["sub_group"].queryset = SubGroup.objects.filter(course_slot_id=slot_id)
+
+        # 编辑已有对象：根据实例的 course_slot 过滤
+        elif self.instance and self.instance.pk and self.instance.course_slot_id:
+            self.fields["sub_group"].queryset = SubGroup.objects.filter(
+                course_slot_id=self.instance.course_slot_id
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        sub = cleaned.get("sub_group")
+        slot = cleaned.get("course_slot")
+        # 双保险：后端一致性校验，防止被绕过
+        if sub and slot and sub.course_slot_id != slot.id:
+            self.add_error("sub_group", "请选择该时段对应的小班（SubGroup）。")
+        return cleaned
     
 @admin.register(ClassNotice)
 class ClassNoticeAdmin(admin.ModelAdmin):
+    form = ClassNoticeAdminForm
     list_display  = ("id", "title", "course_slot", "sub_group",
                      "visible_to", "is_pinned", "created_by", "created_at")
     list_filter   = (("course_slot__semester", admin.RelatedOnlyFieldListFilter),
@@ -425,11 +460,9 @@ class ClassNoticeAdmin(admin.ModelAdmin):
     # 仅在“新增”页面，把 sub_group 初始清空，并打上 data-url
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        if obj is None:
-            form.base_fields["sub_group"].queryset = SubGroup.objects.none()
-            form.base_fields["sub_group"].widget.attrs.update({
-                "data-url": reverse("admin:portal_classnotice_subgroups_by_slot"),
-            })
+        form.base_fields["sub_group"].widget.attrs.update({
+            "data-url": reverse("admin:portal_classnotice_subgroups_by_slot"),
+        })
         return form
 
     # 子路由：按 slot_id 返回 JSON

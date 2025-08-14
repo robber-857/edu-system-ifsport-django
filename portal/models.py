@@ -195,7 +195,12 @@ class LearningResource(models.Model):
 # --- 子表：具体的资源条目 ------------------------------------------------------
 def lr_upload_path(instance, filename):
     # media/class_resources/<sub_group_id>/<filename>
-    return f"class_resources/{instance.resource.sub_group_id}/{filename}"
+    lr = getattr(instance, "learning_resource", None)
+    sg_id = getattr(lr, "sub_group_id", None)
+    lr_id = getattr(instance, "learning_resource_id", None)
+    folder = str(sg_id) if sg_id else (f"lr_{lr_id}" if lr_id else "0")
+    return f"class_resources/{folder}/{filename}"
+   # return f"class_resources/{instance.learning_resource.sub_group_id}/{filename}"
 
 resource_upload_path = lr_upload_path 
 
