@@ -12,3 +12,8 @@ edu.ifsport.com.au {
 
   reverse_proxy web:8000
 }
+# www 子域：301 跳转到裸域
+www.edu.ifsport.com.au {
+  encode zstd gzip
+  redir https://edu.ifsport.com.au{uri} permanent
+}
