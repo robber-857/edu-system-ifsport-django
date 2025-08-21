@@ -8,3 +8,6 @@ tzdata>=2024.1
 psycopg[binary]>=3
 django-storages[boto3]>=1.14
 boto3>=1.34         # 如果用 S3/R2
+django-widget-tweaks>=1.5.0
+cryptography>=42.0.0
+Pillow>=10.0.0

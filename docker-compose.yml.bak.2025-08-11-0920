@@ -1,0 +1,41 @@
+services:
+  web:
+    build: .
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - ./public:/public          # 你的 settings 把 STATIC/MEDIA 收集到 /public 下
+    expose:
+      - "8000"
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: edudb
+      MYSQL_USER: eduuser
+      MYSQL_PASSWORD: strongpass
+      MYSQL_ROOT_PASSWORD: strongerpass
+    command: ["--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - db-data:/var/lib/mysql
+
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./public/static:/static:ro
+      - ./public/media:/media:ro
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

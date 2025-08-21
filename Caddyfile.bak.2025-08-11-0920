@@ -1,0 +1,14 @@
+edu.ifsport.com.au {
+  encode gzip
+
+  handle_path /static/* {
+    root * /static
+    file_server
+  }
+  handle_path /media/* {
+    root * /media
+    file_server
+  }
+
+  reverse_proxy web:8000
+}

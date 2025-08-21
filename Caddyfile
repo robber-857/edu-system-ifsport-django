@@ -1,0 +1,13 @@
+edu.ifsport.com.au, www.edu.ifsport.com.au {
+    encode zstd gzip
+
+    # 先匹配静态与媒体文件，直接由 Caddy 发
+    @static path /static/* /media/*
+    handle @static {
+        root * /srv
+        file_server
+    }
+
+    # 其余请求转发给 Django（同一 docker 网络下的容器名 + 端口）
+    reverse_proxy web:8000
+}
