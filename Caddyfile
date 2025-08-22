@@ -1,13 +1,26 @@
 edu.ifsport.com.au, www.edu.ifsport.com.au {
     encode zstd gzip
 
-    # 先匹配静态与媒体文件，直接由 Caddy 发
-    @static path /static/* /media/*
-    handle @static {
-        root * /srv
+    # ---- 根路径部署：/static 与 /media ----
+    handle_path /static/* {
+        root * /public/static
+        file_server
+    }
+    handle_path /media/* {
+        root * /public/media
         file_server
     }
 
-    # 其余请求转发给 Django（同一 docker 网络下的容器名 + 端口）
+    # ---- 子路径部署（如果 URL_PREFIX="/portal"）：/portal/static 与 /portal/media ----
+    handle_path /portal/static/* {
+        root * /public/static
+        file_server
+    }
+    handle_path /portal/media/* {
+        root * /public/media
+        file_server
+    }
+
+    # 其余请求转发给 Django
     reverse_proxy web:8000
 }
