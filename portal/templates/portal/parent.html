@@ -35,7 +35,7 @@
         {% csrf_token %}
 
         <div class="col-12 col-lg-6">
-          <label class="form-label fw-semibold">Select child & class</label>
+          <label class="form-label fw-semibold">Select class & paticipant</label>
           <select name="subgroup_id"
                   id="id_subgroup"
                   class="form-select form-select-lg">
@@ -52,7 +52,7 @@
 
         <div class="col-12">
           {{ form.content.label_tag }}
-          {{ form.content|add_class:"form-control form-control-lg"|attr:"rows:4"|attr:"placeholder:Write your feedback …" }}
+          {{ form.content|add_class:"form-control form-control-lg"|attr:"rows:4"|attr:"placeholder:Leave your feedback …" }}
           {{ form.content.errors }}
         </div>
 
