@@ -24,3 +24,4 @@ edu.ifsport.com.au, www.edu.ifsport.com.au {
     # 其余请求转发给 Django
     reverse_proxy web:8000
 }
+
